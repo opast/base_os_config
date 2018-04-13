@@ -1,0 +1,68 @@
+---
+# tasks file for base_os_config
+
+- name: centos | upgrade all packages
+  yum: name=* state=latest
+  when: ansible_os_family == "RedHat"
+  tags:
+    - install
+    - update
+
+- name: centos | install epel-release
+  yum:
+    name: epel-release
+    state: latest
+  when: ansible_os_family == "RedHat"
+  tags:
+    - install
+    - update
+
+- name: centos | install prerequisite
+  yum:
+    name: "{{item}}"
+    state: latest
+  with_items:
+    - epel-release
+    - git
+    - mc
+    - nano
+    - htop
+    - iftop
+    - net-tools
+    - wget
+    - wireshark
+    - mtr
+    - libselinux-python
+    - libsemanage-python
+  when: ansible_os_family == "RedHat"
+  tags:
+    - install
+    - update
+
+- name: centos | disable SELinux at next reboot
+  selinux:
+    state: disabled
+  when: ansible_os_family == "RedHat"
+  tags:
+    - install
+    - update
+
+- name: centos | restart server
+  shell: 'sleep 1 && shutdown -r now "Reboot triggered by Ansible" && sleep 1'
+  async: 1
+  poll: 0
+  when: ansible_os_family == "RedHat"
+  tags:
+    - install
+    - update
+
+- name: centos | wait for server to restart
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      port=22
+      delay=10
+  when: ansible_os_family == "RedHat"
+  tags:
+    - install
+    - update
